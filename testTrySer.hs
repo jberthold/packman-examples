@@ -25,9 +25,6 @@ main=do hSetBuffering stdout NoBuffering
 
         let n    = if (length args < 2) then 1 else read (args!!1)
             size = if null args then 128 else read (head args)::Int
-            -- size = 512::Int -- forcing type to be Int 
-            -- size 512 hits a bug in rts/Hash.c:147 (refuse to expand hash
-            -- table, all bets off)
             arr :: A.Array Int Int
             arr  = A.array (0,size-1) 
                    [ (i,i) | i <- [0..size-1] ]
@@ -39,8 +36,6 @@ main=do hSetBuffering stdout NoBuffering
         
         catchPackExc $
          do packet1 <- trySerialize output
--- this crashes inside Hash table module (expand function) when too small
--- expected behaviour would be to terminate with "no buffer"
             putStrLn (show packet1)
             putStrLn "now unpacking (deserialize):"
             copy <- deserialize packet1
@@ -60,9 +55,7 @@ main=do hSetBuffering stdout NoBuffering
         (c,b) <- createC:: IO (ChanName' Double, Double)
         putStrLn "next should hit a blackhole"
         catchPackExc (trySerialize b >>= print)
--- this gets stuck under Linux when buffer was big enough for above
-
-
+        
         let arr2 = A.listArray (0,n-1) (take n (A.elems arr)) :: A.Array Int Int
         putStrLn "this - finally - should work"
         putStrLn ( show $ arr2 A.! 0 ) -- forcing it

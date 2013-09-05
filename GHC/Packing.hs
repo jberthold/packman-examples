@@ -312,7 +312,7 @@ encodeToFile :: Typeable a => FilePath -> a -> IO ()
 encodeToFile path x = trySerialize x >>= encodeFile path
 
 -- | Directly read binary serialised data from a file. Catches
---   exceptions from decoding the file and re-throws $'ParseError'@s
+--   exceptions from decoding the file and re-throws @'ParseError'@s
 decodeFromFile :: Typeable a => FilePath -> IO a
 decodeFromFile path = (decodeFile path >>= deserialize) 
                       `E.catch` (\(e::E.ErrorCall) -> E.throw P_ParseError)
