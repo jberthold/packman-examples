@@ -4,7 +4,29 @@
             -cpp #-}
 {-# OPTIONS_HADDOCK prune #-}
 
--- | There should be some written documentation here...
+{- | 
+
+Module      : GHC.Packing
+Copyright   : (c) Jost Berthold, 2010-2013,
+License     : GPL-2
+
+Maintainer  : Jost Berthold, berthold@diku.dk
+Stability   : experimental
+Portability : no (depends on GHC runtime support)
+
+Serialisation of Haskell data structures using runtime system support.
+
+* @TODO@ describe current API here.
+
+> trySerialize, serialize :: a -> IO ( Either PackException (Serialized a) )
+> deserialize :: Serialized a -> IO a
+
+> data Serialized a
+
+> data PackException    =      ...  -- see below
+> instance Exception PackException  -- signalling RTS and Haskell errors
+
+-}
 
 module GHC.Packing
     ( serialize
@@ -13,8 +35,11 @@ module GHC.Packing
     , Serialized
     , PackException(..)
     , decodeFromFile
-    , encodeToFile
-    )
+    , encodeToFile 
+    -- * Background
+    
+      -- $primitives
+   )
     where
 
 import GHC.IO ( IO(..) )
@@ -111,7 +136,7 @@ prgHash :: FP
 prgHash = unsafePerformIO $ 
           getExecutablePath >>= getFileHash >>= return . toFP
 
-------------------------------
+-----------------------------------
 
 -- | The type of Serialized data. Phantom type 'a' ensures that we do
 -- not unpack rubbish. The hash of the executable is not needed here,
@@ -317,4 +342,66 @@ decodeFromFile :: Typeable a => FilePath -> IO a
 decodeFromFile path = (decodeFile path >>= deserialize) 
                       `E.catch` (\(e::E.ErrorCall) -> E.throw P_ParseError)
 
+----------------------------------------
+-- digressive documentation
 
+{- $primitives
+
+The functionality exposed by this module builds on serialisation of
+Haskell heap graph structures, first implemented in the context of
+implementing the GpH implementation GUM (Graph reduction on a 
+Unified Memory System) and later adopted by the implementation of
+Eden. Independent of its evaluation state, data and thunks can be
+transferred between the (independent) heaps of several running Haskell
+runtime system instances which execute the same executable.
+
+The idea to expose the heap data serialisation functionality 
+(called "packing") to Haskell by itself was first described in 
+ Jost Berthold. /Orthogonal Serialisation for Haskell/.
+ In Jurriaan Hage and Marco Morazan, editors, 
+ /IFL'10, 22nd Symposium on Implementation and Application of 
+ Functional Languages/, Springer LNCS 6647, pages 38-53, 2011.
+This paper can be found at 
+<http://www.mathematik.uni-marburg.de/~eden/papers/mainIFL10-withCopyright.pdf>,
+the original publication is available at 
+<http://www.springerlink.com/content/78642611n7623551/>.
+
+The core runtime support consists of just two operations:
+(slightly paraphrasing the way in which GHC implements the IO monad here)
+
+> serialize#   :: a -> IO ByteArray# -- OUTDATED, see below
+> deserialize# :: ByteArray# -> IO a -- which is actually pure from a mathematical POW
+
+However, these operations are completely unsafe with respect to Haskell
+types, and may fail at runtime for various other reasons as well. 
+Type safety can be established by a phantom type, but needs to be checked
+at runtime when the resulting data structure is externalised (for instance,
+saved to a file). Besides prohibiting unprotected type casts, another
+restriction that needs to be explicitly checked in this case is that 
+different programs cannot exchange data by this serialisation. When data are
+serialised during execution, they can only be deserialised by exactly the 
+same executable binary because they contain code pointers that will change
+even by recompilation.
+
+Other failures can occur because of the runtime system's limitations, 
+and because some mutable data types are not allowed to be serialised.
+A newer API therefore suggests additions towards exception handling
+and better usability. The type of the suggested serialisation
+primitive is (again paraphrasing):
+
+> trySerialize# :: a -> IO ( Int# , ByteArray# )
+
+where the @Int#@ encodes potential error conditions returned by the runtime:
+
+Further to returning error codes, this primitive operation will not block
+the calling thread when the serialisation encounters a blackhole in the
+heap. While blocking is a perfectly acceptable behaviour (making packing
+behave analogous to evaluation wrt. concurrency), the @'trySerialize@
+variant allows one to explicitly control it and avoid becoming unresponsive.
+
+The original primitive @serialize@ is therefore modified to allow for
+returning error codes as well, and differs from @trySerialize@ in that
+it blocks the calling thread when a blackhole is found during serialisation.
+
+> serialize# :: a -> IO ( Int# , ByteArray# )
+-}
