@@ -57,14 +57,17 @@ parse errors and type/binary mismatch.
 -}
 
 module GHC.Packing
-    ( serialize
+    ( -- * Serialisation Operations
+      serialize
     , trySerialize
     , deserialize
+      -- * Data Types
     , Serialized
     , PackException(..)
-    , decodeFromFile
+      -- * Serialisation and File I/O
     , encodeToFile 
-    -- * Background
+    , decodeFromFile
+    -- * Background Information
     
       -- $primitives
    )
@@ -171,14 +174,34 @@ prgHash = unsafePerformIO $
 -- but only when /externalising/ data (writing to disk, for instance).
 data Serialized a = Serialized { packetData :: ByteArray# }
 
--- | Basic serialisation function. Calling thread may block when
---   packing hits a black hole, exception cases terminate the program.
---   /Not suggested for general use/.
+-- | Basic serialisation function. The calling thread is blocked when
+--   packing hits a black hole, and @'PackException'@s are thrown when
+--   errors occur in the runtime system.
 serialize :: a -> IO (Serialized a)
 serialize x
     = IO (\s ->
            case serialize# x s of
-             (# s', bArr# #) -> (# s', Serialized { packetData=bArr# } #) )
+             (# s', 0#, bArr# #) 
+                 -> (# s', Serialized { packetData=bArr# } #) 
+             (# s', n#, _ #)
+                 -> (# s', E.throw (tagToEnum# n# :: PackException ) #) 
+         )
+
+-- | Serialisation routine using pack exceptions to signal errors.
+--   This version does not block the calling thread when a black hole,
+--   but instead uses the @'P_BLACKHOLE'@ exception code (see
+--   @'PackException'@)
+trySerialize :: a -> IO (Serialized a) -- throws PackException
+trySerialize x = do r <- trySer_ x
+                    case r of
+                      Left err     -> E.throw err
+                      Right packed -> return packed
+
+trySer_ :: a -> IO (Either PackException (Serialized a))
+trySer_ x = IO (\s -> case trySerialize# x s of
+                        (# s', 0#, bArr# #) -> (# s', Right (Serialized { packetData=bArr# }) #)
+                        (# s', n#, _ #)     -> (# s', Left (tagToEnum# n# ) #)
+               )
 
 -- | Deserialisation function. 
 deserialize :: Serialized a -> IO a
@@ -221,22 +244,6 @@ instance Show PackException where
 --     show (PackException code) = "Pack Exception: " ++ show code
 
 instance E.Exception PackException -- that should be it.. now match this type in catch clauses
-
--- | Serialisation routine using pack exceptions to signal errors.
---   This version does not block the calling thread when a black hole
---   is found, and throws @'PackException'@s with RTS-generated codes
---   when errors occur.
-trySerialize :: a -> IO (Serialized a) -- throws PackException
-trySerialize x = do r <- trySer_ x
-                    case r of
-                      Left err     -> E.throw err
-                      Right packed -> return packed
-
-trySer_ :: a -> IO (Either PackException (Serialized a))
-trySer_ x = IO (\s -> case trySerialize# x s of
-                        (# s', 0#, bArr# #) -> (# s', Right (Serialized { packetData=bArr# }) #)
-                        (# s', n#, _ #)     -> (# s', Left (tagToEnum# n# ) #)
-               )
 
 -----------------------------------------------
 -- Show Instance for packets: 

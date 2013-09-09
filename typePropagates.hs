@@ -10,7 +10,7 @@ import System.IO
 
 -- this test exposes an overflow of Int in the list that is packed.  On 32-bit
 -- platforms, 2^31 is enough to show it. On 64-bit platforms, Int is 8 bytes
--- (GHC choice), therefore nothing spectacular is going on unless we go higher.
+-- (GHC choice), therefore we go higher.
 
 main :: IO ()
 main = do
@@ -22,7 +22,6 @@ main = do
         let output = map (2^) ([30..33] ++ [62..66]) -- will be [Int] later
         putStrLn "evaluation of list `map (2^) ([30..33] ++ [62..66])'"
         
---        putStrLn (show output)
         if null args then putStrLn ("not touching output")
                      else putStrLn $ show $ take (read (head args)) output
 
@@ -36,9 +35,6 @@ main = do
         putStrLn ("unpacked, now evaluate")
 
         putStrLn (show copy)
-
-        -- type error
-        -- if copy == output then putStrLn "wrong!" else putStrLn "weird"
 
         let copycast = map fromIntegral copy
         sequence_ [ putStrLn ("overflow computing " ++ show o 
