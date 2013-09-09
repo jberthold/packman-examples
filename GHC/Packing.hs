@@ -9,22 +9,50 @@
 Module      : GHC.Packing
 Copyright   : (c) Jost Berthold, 2010-2013,
 License     : GPL-2
-
-Maintainer  : Jost Berthold, berthold@diku.dk
+Maintainer  : berthold@diku.dk
 Stability   : experimental
 Portability : no (depends on GHC runtime support)
 
 Serialisation of Haskell data structures using runtime system support.
 
-* @TODO@ describe current API here.
+Haskell heap structures can be serialised, capturing their current
+state of evaluation, and deserialised later during the same program
+run (effectively duplicating the data) or materialised on storage and
+deserialised in a different run of the /same/ executable binary.
 
-> trySerialize, serialize :: a -> IO ( Either PackException (Serialized a) )
+The feature can be used to implement message passing over a network
+(which is where the runtime support originated), or for various
+applications based on data persistence, for instance checkpointing and
+memoisation.
+
+There are two basic operations to serialise Haskell heap data:
+
+> serialize, trySerialize :: a -> IO (Serialized a)
+
+Both routines will throw @'PackException'@s when error conditions
+occur inside the runtime system. In presence of concurrent threads,
+the variant @'serialize'@ may block in case another thread is
+evaluating data /referred to/ by the data to be
+serialised. @'trySerialize'@ variant will never block, but instead
+signal the condition as @'PackException'@ @'P_BLACKHOLE'@.  Other
+exceptions thrown by these two operations indicate error conditions
+within the runtime system support (see @'PackException'@).
+
+The inverse operation to serialisation is
+
 > deserialize :: Serialized a -> IO a
 
-> data Serialized a
+The data type @'Serialized' a@ includes a phantom type @a@ to ensure
+type safety within one and the same program run. Type @a@ can be
+polymorphic (at compile time, that is) when @Serialized a@ is not used
+apart from being argument to @deserialize@.
 
-> data PackException    =      ...  -- see below
-> instance Exception PackException  -- signalling RTS and Haskell errors
+The @Show@, @Read@, and @Binary@ instances of @Serialized a@ require an
+additional @Typeable@ context (which requires @a@ to be monomorphic)
+in order to implement dynamic type checks when parsing and deserialising
+data from external sources.
+Consequently, the @'PackException'@ type contains exceptions which indicate
+parse errors and type/binary mismatch.
 
 -}
 
