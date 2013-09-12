@@ -24,8 +24,9 @@ RUNFLAGS=${TWOPE} ${EXTRARUN}
 # can also set EXTRARUN flags, e.g. EXTRARUN="+RTS -l -RTS"
 # these flags go last in the command which compiles/runs
 
-PROGRAMS=typePropagates testExceptions testTrySer
+PROGRAMS=typePropagates testExceptions testTrySer Memoize-memocombinators
 LIB=GHC/Packing
+OTHER=Data/IntTrie.hs Data/MemoCombinators.hs
 
 all	: compiler $(PROGRAMS)
 .PHONY	: compiler $(PROGRAMS) clean help
@@ -44,9 +45,9 @@ help	:
 	@echo 'EXTRARUN:  extra flags for running the program (come last)'
 	@echo
 	@echo 'Usage example:'
-	@echo '#>make typePropagates EDEN=../ghc-7.7 WAYFLAGS="-parcp -eventlog" EXTRA=-dcore-lint EXTRARUN="+RTS -l -N3"'
+	@echo '#>make testTrySer EDEN=../ghc-7.7 WAYFLAGS="-parcp -eventlog" EXTRA=-dcore-lint EXTRARUN="+RTS -l -N3"'
 	@echo
-	@echo '(compile SimpleProcess with ../ghc-7.7, for copy way with event logging,'
+	@echo '(compile testTrySer with ../ghc-7.7, for copy way with event logging,'
 	@echo 'run a lint check on core when compiling, run on 3 PEs using logging).'
 
 
@@ -55,6 +56,7 @@ clean	:
 	@for PROG in ${PROGRAMS}; do rm -f $$PROG $$USER\=$$PROG; done
 	@rm -f ${LIB}.hi ${LIB}.o
 	@rm -rf doc/
+	@rm -f Data/*o Data/*hi
 
 compiler:
 	$(EDEN) --version
@@ -66,7 +68,7 @@ doc:	${LIB}.hs
 	$(EDEN) $(FLAGS) $< --make
 
 ${LIB}.o	: ${LIB}.hs
-	$(EDEN) $(FLAGS) $< --make
+	$(EDEN) $(FLAGS) $< -c
 
 # testTrySer needs blackhole creation (or a hack...)
 testTrySer: testTrySer.o ${LIB}.o
@@ -77,3 +79,7 @@ typePropagates: typePropagates.o ${LIB}.o
 
 testExceptions:	testExceptions.o ${LIB}.o
 	$(EDEN) $(FLAGS) -o $@ $@.hs --make
+
+Memoize-memocombinators: Memoize-memocombinators.o ${LIB}.o ${OTHER}
+	$(EDEN) $(FLAGS) -o $@ $@.hs --make
+
