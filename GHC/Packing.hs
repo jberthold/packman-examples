@@ -73,6 +73,12 @@ module GHC.Packing
    )
     where
 
+-- could make a compatibility layer for Eden-GHC-7.x (supports
+-- serialize#) but we rather bail out here.
+#if __GLASGOW_HASKELL__ < 707
+#error This module assumes GHC-7.7 or above, with special extensions checked by a configure script.
+#endif
+
 import GHC.IO ( IO(..) )
 import GHC.Prim
     ( ByteArray#, sizeofByteArray#, serialize#, deserialize#, trySerialize#, tagToEnum# )
