@@ -5,6 +5,7 @@ import Control.Concurrent
 import System.Directory
 
 main = do args <- getArgs
+          putStrLn "Checkpointed monadic action, hit ^C and re-run any time"
           let n = if null args then 10 else read (head args)::Int
           (mapMC "mapMC_test2" doIt [1..n] >>= print)
           (foldMC "foldMC_test2" foldIt [] [1..n] >>= print)

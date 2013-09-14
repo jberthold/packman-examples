@@ -57,6 +57,7 @@ clean	:
 	@rm -f ${LIB}.hi ${LIB}.o
 	@rm -rf doc/
 	@rm -f Data/*o Data/*hi
+	@rm -f *_test2
 
 compiler:
 	$(EDEN) --version
@@ -81,5 +82,9 @@ testExceptions:	testExceptions.o ${LIB}.o
 	$(EDEN) $(FLAGS) -o $@ $@.hs --make
 
 Memoize-memocombinators: Memoize-memocombinators.o ${LIB}.o ${OTHER}
+	$(EDEN) $(FLAGS) -o $@ $@.hs --make
+
+# Checkpoint program in first version doznwok! Use only second version
+CheckpointExample2: CheckpointExample2.o ${LIB}.o CheckpointMonad2.o
 	$(EDEN) $(FLAGS) -o $@ $@.hs --make
 

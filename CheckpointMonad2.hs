@@ -36,6 +36,11 @@ recovering name actions
 -- the second argument...
 -- A version without this auto-recovery (see other file) tends to seg-fault
 
+-- We actually want the files to be deleted after completion of the entire
+-- action. Easy to achieve for the recovering, harder for the ones below.
+
+----------------------------------------
+
 -- see Control.Monad API: we want to build (in this order) sequence,
 -- replicateM, mapM, forM, filterM, zipWithM, foldM (and
 -- underscored: sequence_ replicateM_ mapM_ forM_ zipWithM_ foldM_
