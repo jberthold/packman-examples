@@ -24,7 +24,7 @@ RUNFLAGS=${TWOPE} ${EXTRARUN}
 # can also set EXTRARUN flags, e.g. EXTRARUN="+RTS -l -RTS"
 # these flags go last in the command which compiles/runs
 
-PROGRAMS=typePropagates testExceptions testTrySer Memoize-memocombinators
+PROGRAMS=typePropagates testExceptions testTrySer Memoize-memocombinators CheckpointExample2
 LIB=GHC/Packing
 OTHER=Data/IntTrie.hs Data/MemoCombinators.hs
 
@@ -42,13 +42,12 @@ help	:
 	@echo 'EDEN:      compiler to use (default "./eden-exp")'
 	@echo 'WAYFLAGS:  compilation way (default "-debug")'
 	@echo 'EXTRA:     extra flags for compilation (come last on command line)'
-	@echo 'EXTRARUN:  extra flags for running the program (come last)'
 	@echo
 	@echo 'Usage example:'
-	@echo '#>make testTrySer EDEN=../ghc-7.7 WAYFLAGS="-parcp -eventlog" EXTRA=-dcore-lint EXTRARUN="+RTS -l -N3"'
+	@echo '#>make testTrySer EDEN=../ghc-7.7 WAYFLAGS="-parcp -eventlog" EXTRA=-dcore-lint'
 	@echo
 	@echo '(compile testTrySer with ../ghc-7.7, for copy way with event logging,'
-	@echo 'run a lint check on core when compiling, run on 3 PEs using logging).'
+	@echo 'and activate checks on core when compiling'
 
 
 clean	:
