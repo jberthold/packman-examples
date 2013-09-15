@@ -4,8 +4,8 @@ AC_INIT([Haskell RTS-serialisation support module ], [0.0.0.0], [jb.diku@gmail.c
 AC_CONFIG_SRCDIR([rts-serialisation.cabal])
 
 # figure out GHC to use
-AC_ARG_WITH([hc],
-            [AC_HELP_STRING([--with-hc=ARG],
+AC_ARG_WITH([compiler],
+            [AC_HELP_STRING([--with-compiler=ARG],
 	                    [Use path ARG for GHC (we only support GHC!)])],
 	    [WithGhc="$withval"],
             [if test "$HC" = ""; then
