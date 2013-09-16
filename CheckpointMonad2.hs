@@ -13,6 +13,7 @@ import System.Directory
 import System.IO(openBinaryTempFile,hClose)
 
 import Control.Monad.IO.Class -- to embed IO actions
+import Control.Exception as E
 
 -- base
 checkpoint :: (Typeable a, Typeable m, MonadIO m) => FilePath -> m a -> m a
@@ -30,7 +31,9 @@ recovering name actions
     = do haveFile <- liftIO (doesFileExist name)
          if not haveFile then actions
             else liftIO (putStrLn ("recovering from file " ++ name)) >> 
-                 liftIO (decodeFromFile name) >>= id
+                 liftIO (E.catch (decodeFromFile name) orActions) >>= id
+    where orActions e = do putStrLn ("failed: " ++ show (e::PackException))
+                           return actions
 -- this allows for auto-recovering versions.  however, there is NO guarantee
 -- that the file contains anything remotely resembling the actions passed as
 -- the second argument...
