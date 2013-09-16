@@ -211,7 +211,10 @@ trySer_ x = IO (\s -> case trySerialize# x s of
 
 -- | Deserialisation function. 
 deserialize :: Serialized a -> IO a
-deserialize ( Serialized{..} ) = IO (deserialize# packetData )
+deserialize ( Serialized{..} ) = IO $ 
+              \s -> case deserialize# packetData s of
+                      (# s', 0#, x #) -> (# s', x #)
+                      (# s', n#, _ #) -> (# s', E.throw ((tagToEnum# n#)::PackException) #) 
 
 --------------------------------------------------------
 
@@ -224,6 +227,7 @@ data PackException = P_SUCCESS      -- | all fine, ==0
      | P_CANNOT_PACK  -- ^ RTS: found a closure that cannot be packed (MVar, TVar)
      | P_UNSUPPORTED  -- ^ RTS: hit unsupported closure type (implementation missing)
      | P_IMPOSSIBLE   -- ^ RTS: hit impossible case (stack frame, message,...RTS bug!)
+     | P_GARBLED       -- ^ RTS: invalid data for deserialisation
      -- Error codes from inside Haskell
      | P_ParseError     -- ^ Haskell: Packet data could not be parsed
      | P_BinaryMismatch -- ^ Haskell: Executable binaries do not match
@@ -238,6 +242,7 @@ instance Show PackException where
     show P_CANNOT_PACK   = "found a closure that cannot be packed (MVar, TVar)"
     show P_UNSUPPORTED   = "hit an unsupported closure type (whose implementation is missing)"
     show P_IMPOSSIBLE    = "hit an impossible case (stack frame, message). This is a bug in the RTS!)"
+    show P_GARBLED       = "invalid data for deserialisation"
     show P_ParseError     = "Packet parse error"
     show P_BinaryMismatch = "executable binaries do not match"
     show P_TypeMismatch   = "Packet data has unexpected type"
@@ -445,4 +450,14 @@ returning error codes as well, and differs from @trySerialize@ in that
 it blocks the calling thread when a blackhole is found during serialisation.
 
 > serialize# :: a -> IO ( Int# , ByteArray# )
+
+The Haskell layer and its types protect the interface function @'deserialize'@
+from being applied to  grossly wrong data (by checking a fingerprint of the 
+executable and the expected type), but deserialisation is fragile by nature
+(unpacking code pointers and data).
+The primitive operation in the runtime system will only detect grossly wrong
+formats, and the primitive will return error code @'P_GARBLED'@ when data
+corruption is detected.
+
+> deserialize# :: ByteArray# -> IO ( Int# , a )
 -}
