@@ -17,11 +17,10 @@ import System.Mem
 {-# NOINLINE fib1 #-}
 fib1 :: Integral a => a -> a
 fib1 = memo fib1'
- where
-  fib1' 0 = 1
-  fib1' 1 = 1
-  fib1' n = fib1 (n-1) + fib1 (n-2)
-  memo = Memo.integral
+ where fib1' 0 = 0
+       fib1' 1 = 1
+       fib1' n = fib1 (n-1) + fib1 (n-2)
+       memo = Memo.integral
 
 -- we have to specialise on Integrals with this memo library
 
@@ -32,9 +31,10 @@ function = unsafePerformIO $ do
      haveFile <- doesFileExist filename
      if haveFile then putStrLn "Loading serialized function" >>
                       decodeFromFile filename
-                 else let f = memo fib
+                 else let {-# NOINLINE f #-} -- important!
+                          f = memo fib
                           memo = Memo.integral 
-                          fib 0 = 1::Integer -- fixes the type
+                          fib 0 = 0::Integer -- needs fixed type
                           fib 1 = 1
                           fib n = f (n-1) + f (n-2)
                       in putStrLn "no serialized function, start fresh" >>
