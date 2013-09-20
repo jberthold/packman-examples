@@ -86,7 +86,7 @@ import GHC.Exts ( Int(..))
 import Data.Word( Word, Word64, Word32 )
 import Data.Array.Base ( UArray(..), elems, listArray )
 import Foreign.Storable ( sizeOf )
--- import GHC.Constants(TargetWord) would be nice...
+-- import GHC.Constants(TargetWord) would be nice...but is gone
 
 -- Read and Show instances
 import Text.Printf ( printf )
@@ -140,13 +140,13 @@ hexWordFmt = "0x%08x"
 
 -- This should ensure (as of GHC.7.8) that types with the same name
 -- but different definition get different hashes.  (however, we also
--- require the executable to be exactly the same, so this is just for
--- "future use".
+-- require the executable to be exactly the same, so this is not
+-- "strictly necessary" anyway.
 -----------------------------------------------
 
 -- Typeable context for dynamic type checks. 
--- | Custom GHC fingerprint type with its two Word64 fields, for 
--- reading it back in
+-- | The module uses a custom GHC fingerprint type with its two Word64
+--   fields, to be able to /read/ fingerprints
 data FP = FP Word64 Word64 deriving (Read, Show, Eq)
 
 -- | comparing 'FP's
@@ -164,10 +164,11 @@ typeFP x = toFP fp
   where  (TypeRep fp _ _) = typeOf x
 
 -----------------------------------------------
--- |  check for ensure the program (executable) is
+-- |  check that the program (executable) is
 -- identical when packing and unpacking
 -- It uses the fingerprint type from above (Read/Show instances required).
--- This 'FP' is computed once, by virtue of being a CAF (safe to inline but inefficient).
+-- This 'FP' is computed once, by virtue of being a CAF (safe to
+-- inline but inefficient).
 {-# NOINLINE prgHash #-}
 prgHash :: FP
 prgHash = unsafePerformIO $ 
@@ -183,7 +184,7 @@ data Serialized a = Serialized { packetData :: ByteArray# }
 -- | Basic serialisation function. The calling thread is blocked when
 --   packing hits a black hole, and @'PackException'@s are thrown when
 --   errors occur in the runtime system.
-serialize :: a -> IO (Serialized a)
+serialize :: a -> IO (Serialized a) -- throws PackException (RTS)
 serialize x
     = IO (\s ->
            case serialize# x s of
@@ -193,24 +194,24 @@ serialize x
                  -> (# s', E.throw (tagToEnum# n# :: PackException ) #) 
          )
 
--- | Serialisation routine using pack exceptions to signal errors.
---   This version does not block the calling thread when a black hole,
---   but instead uses the @'P_BLACKHOLE'@ exception code (see
---   @'PackException'@)
-trySerialize :: a -> IO (Serialized a) -- throws PackException
-trySerialize x = do r <- trySer_ x
+-- | Non-blocking serialisation routine using @'PackException'@s to
+-- signal errors. This version does not block the calling thread when
+-- a black hole is found, but instead signals the condition by the
+-- @'P_BLACKHOLE'@ exception.
+trySerialize :: a -> IO (Serialized a) -- throws PackException (RTS)
+trySerialize x = do r <- trySer_ x -- a more verbose way of writing it...
                     case r of
                       Left err     -> E.throw err
                       Right packed -> return packed
-
+-- using a helper function
 trySer_ :: a -> IO (Either PackException (Serialized a))
 trySer_ x = IO (\s -> case trySerialize# x s of
                         (# s', 0#, bArr# #) -> (# s', Right (Serialized { packetData=bArr# }) #)
                         (# s', n#, _ #)     -> (# s', Left (tagToEnum# n# ) #)
                )
 
--- | Deserialisation function. 
-deserialize :: Serialized a -> IO a
+-- | Deserialisation function. May throw @'PackException'@ @'P_GARBLED'@
+deserialize :: Serialized a -> IO a  -- throws PackException (garbled)
 deserialize ( Serialized{..} ) = IO $ 
               \s -> case deserialize# packetData s of
                       (# s', 0#, x #) -> (# s', x #)
@@ -220,7 +221,7 @@ deserialize ( Serialized{..} ) = IO $
 
 -- | Packing exception codes, matching error codes implemented in the
 -- runtime system or describing errors which can occur within Haskell.
-data PackException = P_SUCCESS      -- | all fine, ==0
+data PackException = P_SUCCESS      -- | all fine, ==0. We do not expect this one to occur.
      -- Error codes from the runtime system: (how can I teach haddock to make this a heading?)
      | P_BLACKHOLE    -- ^ RTS: packing hit a blackhole (not blocking thread)
      | P_NOBUFFER     -- ^ RTS: buffer too small (increase RTS buffer with -qQ<size>)
@@ -248,13 +249,7 @@ instance Show PackException where
     show P_TypeMismatch   = "Packet data has unexpected type"
 --    show other           = "Packing error. TODO: define strings for more specific cases."
 
---  contains a @'PackingErrorCode'@ which describes the error
--- data PackException = PackException PackingErrorCode
---                     deriving (Eq, Typeable)
--- instance Show PackException where
---     show (PackException code) = "Pack Exception: " ++ show code
-
-instance E.Exception PackException -- that should be it.. now match this type in catch clauses
+instance E.Exception PackException
 
 -----------------------------------------------
 -- Show Instance for packets: 
@@ -402,7 +397,7 @@ transferred between the (independent) heaps of several running Haskell
 runtime system instances which execute the same executable.
 
 The idea to expose the heap data serialisation functionality 
-(called "packing") to Haskell by itself was first described in 
+(often called /packing/) to Haskell by itself was first described in 
  Jost Berthold. /Orthogonal Serialisation for Haskell/.
  In Jurriaan Hage and Marco Morazan, editors, 
  /IFL'10, 22nd Symposium on Implementation and Application of 
@@ -432,24 +427,27 @@ even by recompilation.
 Other failures can occur because of the runtime system's limitations, 
 and because some mutable data types are not allowed to be serialised.
 A newer API therefore suggests additions towards exception handling
-and better usability. The type of the suggested serialisation
-primitive is (again paraphrasing):
+and better usability.
+The original primitive @'serialize'@ is modified and now returns error
+codes, leading to the following type (again paraphrasing):
+
+> serialize# :: a -> IO ( Int# , ByteArray# )
+
+where the @Int#@ encodes potential error conditions returned by the runtime.
+
+A second primitive operation has been defined, which considers the presence
+of concurrent evaluations of the serialised data by other threads:
 
 > trySerialize# :: a -> IO ( Int# , ByteArray# )
-
-where the @Int#@ encodes potential error conditions returned by the runtime:
 
 Further to returning error codes, this primitive operation will not block
 the calling thread when the serialisation encounters a blackhole in the
 heap. While blocking is a perfectly acceptable behaviour (making packing
-behave analogous to evaluation wrt. concurrency), the @'trySerialize@
+behave analogous to evaluation wrt. concurrency), the @'trySerialize'@
 variant allows one to explicitly control it and avoid becoming unresponsive.
 
-The original primitive @serialize@ is therefore modified to allow for
-returning error codes as well, and differs from @trySerialize@ in that
+as well, and differs from @trySerialize@ in that
 it blocks the calling thread when a blackhole is found during serialisation.
-
-> serialize# :: a -> IO ( Int# , ByteArray# )
 
 The Haskell layer and its types protect the interface function @'deserialize'@
 from being applied to  grossly wrong data (by checking a fingerprint of the 
