@@ -8,7 +8,7 @@
 
 Module      : GHC.Packing
 Copyright   : (c) Jost Berthold, 2010-2013,
-License     : GPL-2
+License     : probably BSD3 (soon)
 Maintainer  : berthold@diku.dk
 Stability   : experimental
 Portability : no (depends on GHC runtime support)
@@ -237,14 +237,14 @@ data PackException = P_SUCCESS      -- | all fine, ==0
 
 instance Show PackException where
     show P_SUCCESS = "No error." -- we do not expect to see this
-    show P_BLACKHOLE     = "packing hit a blackhole"
-    show P_NOBUFFER      = "buffer too small (RTS buffer can be increased with -qQ<size>)"
-    show P_CANNOT_PACK   = "found a closure that cannot be packed (MVar, TVar)"
-    show P_UNSUPPORTED   = "hit an unsupported closure type (whose implementation is missing)"
-    show P_IMPOSSIBLE    = "hit an impossible case (stack frame, message). This is a bug in the RTS!)"
-    show P_GARBLED       = "invalid data for deserialisation"
+    show P_BLACKHOLE     = "Packing hit a blackhole"
+    show P_NOBUFFER      = "Buffer too small (RTS buffer can be increased with -qQ<size>)"
+    show P_CANNOT_PACK   = "Data contain a closure that cannot be packed (MVar, TVar)"
+    show P_UNSUPPORTED   = "Contains an unsupported closure type (whose implementation is missing)"
+    show P_IMPOSSIBLE    = "An impossible case happened (stack frame, message). This is probably a bug."
+    show P_GARBLED       = "Garbled data for deserialisation"
     show P_ParseError     = "Packet parse error"
-    show P_BinaryMismatch = "executable binaries do not match"
+    show P_BinaryMismatch = "Executable binaries do not match"
     show P_TypeMismatch   = "Packet data has unexpected type"
 --    show other           = "Packing error. TODO: define strings for more specific cases."
 
