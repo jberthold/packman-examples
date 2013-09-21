@@ -13,6 +13,8 @@ import System.Directory(doesFileExist)
 import System.IO.Unsafe
 import System.Mem
 
+import Control.Exception
+
 -- memoized version of fibonacci
 {-# NOINLINE fib1 #-}
 fib1 :: Integral a => a -> a
@@ -27,19 +29,14 @@ fib1 = memo fib1'
 -- "unsafe global", requires monomorphic type
 --function :: Integer -> Integer
 {-# NOINLINE function #-}
-function = unsafePerformIO $ do
-     haveFile <- doesFileExist filename
-     if haveFile then putStrLn "Loading serialized function" >>
-                      decodeFromFile filename
-                 else let {-# NOINLINE f #-} -- important!
-                          f = memo fib
-                          memo = Memo.integral 
-                          fib 0 = 0::Integer -- needs fixed type
-                          fib 1 = 1
-                          fib n = f (n-1) + f (n-2)
-                      in putStrLn "no serialized function, start fresh" >>
-                         return f
-                         
+function = unsafePerformIO $ decodeFromFile filename `catch`
+                               (\e -> print (e::SomeException) >> return f)
+                                   where {-# NOINLINE f #-} -- important
+                                         f = Memo.integral fib
+                                         fib 0 = 0::Integer -- needs fixed type
+                                         fib 1 = 1
+                                         fib n = f (n-1) + f (n-2)
+
 filename :: FilePath
 filename = "fibmemocombinators2.serialized"
 

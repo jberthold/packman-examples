@@ -27,13 +27,16 @@ checkpoint name actions
       >> actions
 
 recovering :: (Typeable a, Typeable m, MonadIO m) => FilePath -> m a -> m a
-recovering name actions 
-    = do haveFile <- liftIO (doesFileExist name)
-         if not haveFile then actions
-            else liftIO (putStrLn ("recovering from file " ++ name)) >> 
-                 liftIO (E.catch (decodeFromFile name) orActions) >>= id
-    where orActions e = do putStrLn ("failed: " ++ show (e::PackException))
-                           return actions
+recovering name actions
+    = (liftIO (decodeFromFile name 
+                `catch` (\e -> print (e::SomeException) >> return actions)))
+      >>= id
+    -- = do haveFile <- liftIO (doesFileExist name)
+    --      if not haveFile then actions
+    --         else liftIO (putStrLn ("recovering from file " ++ name)) >> 
+    --              liftIO (E.catch (decodeFromFile name) orActions) >>= id
+    -- where orActions e = do putStrLn ("failed: " ++ show (e::PackException))
+    --                        return actions
 -- this allows for auto-recovering versions.  however, there is NO guarantee
 -- that the file contains anything remotely resembling the actions passed as
 -- the second argument...
@@ -53,7 +56,7 @@ recovering name actions
 -- evaluate each action from left to right, checkpointing in-between
 sequenceC :: (Typeable a, Typeable m, MonadIO m) => FilePath -> [m a] -> m [a]
 -- this tends to forget the bound x (is it only on the stack?):
--- sequenceC file ms = foldr k (return []) ms
+--sequenceC file ms = recovering file $ foldr k (return []) ms
 --     where k m m' = m >>= \x -> checkpoint file (m' >>= \xs -> return (x:xs))
 sequenceC  _   [] = return []
 sequenceC name ms = recovering name (seqC_acc [] ms)
