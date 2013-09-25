@@ -15,12 +15,12 @@ import System.Directory
 -- foreign import ccall "&keepCAFs" keepCAFs :: Ptr CInt
 -- setKeepCAFs = poke keepCAFs 1
 
-#warning Checkpoints produce seg.faults in non-parallel version (cause unclear)
-
 main = do args <- getArgs
           let doRecover = not (null args) && head args == "-r"
               -- or we read n, the number of repetitions 
-              n = if null args then 10 else read (head args)::Int
+              n = if doRecover || null args 
+                  then 10 else read (head args)::Int
+          putStrLn ("Size is " ++ show n) 
           -- xs <- if doRecover then recover "seqC_test"
           --                    else mapMC "seqC_test" doIt [1..n]
           -- xs <- if doRecover then recover "foldMC_test"
