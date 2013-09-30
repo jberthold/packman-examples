@@ -1,5 +1,5 @@
 
-import CheckpointMonad2
+import Control.Monad.Checkpoint
 import System.Environment
 import Control.Concurrent
 import System.Directory

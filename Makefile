@@ -24,8 +24,9 @@ RUNFLAGS=${TWOPE} ${EXTRARUN}
 # can also set EXTRARUN flags, e.g. EXTRARUN="+RTS -l -RTS"
 # these flags go last in the command which compiles/runs
 
-PROGRAMS=typePropagates testExceptions testTrySer Memoize-memocombinators CheckpointExample2
+PROGRAMS=typePropagates testExceptions testTrySer Memoize-memocombinators CheckpointExample
 LIB=GHC/Packing
+CPLIB=Control/Monad/Checkpoint
 OTHER=Data/IntTrie.hs Data/MemoCombinators.hs
 
 all	: compiler $(PROGRAMS)
@@ -70,6 +71,9 @@ doc:	${LIB}.hs
 ${LIB}.o	: ${LIB}.hs
 	$(EDEN) $(FLAGS) $< -c
 
+#${CPLIB}.o	: ${CPLIB}.hs
+#	$(EDEN) $(FLAGS) $< -c
+
 # testTrySer needs blackhole creation (or a hack...)
 testTrySer: testTrySer.o ${LIB}.o
 	$(EDEN) -parcp ${WAYFLAGS} ${OTHERFLAGS} ${EXTRA} -o $@ $@.hs --make
@@ -84,6 +88,6 @@ Memoize-memocombinators: Memoize-memocombinators.o ${LIB}.o ${OTHER}
 	$(EDEN) $(FLAGS) -o $@ $@.hs --make
 
 # Checkpoint program in first version doznwok! Use only second version
-CheckpointExample2: CheckpointExample2.o ${LIB}.o CheckpointMonad2.o
+CheckpointExample: CheckpointExample.o ${LIB}.o ${CPLIB}.o
 	$(EDEN) $(FLAGS) -o $@ $@.hs --make
 
