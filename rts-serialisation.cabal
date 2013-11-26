@@ -24,19 +24,19 @@ cabal-version:       >=1.8
 library
   -- Modules exported by the library.
   exposed-modules:     GHC.Packing, Control.Monad.Checkpoint
-  		        -- MemoizeExample, CheckpointExample, 
-			-- typePropagates, lazyIO
+                        -- MemoizeExample, CheckpointExample, 
+                        -- typePropagates, lazyIO
 
   -- other-modules:       
 
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.7.* && < 5, 
-		       directory >=1.2.* && < 2,
-  		       ghc-prim >=0.3.* && < 1, 
-		       array >=0.4.* && < 0.6, 
-		       binary >=0.7.* && < 1, 
-		       bytestring >=0.10.* && < 1,
-		       transformers >=0.3. && < 1
+  build-depends:       base >=4.7 && < 5,
+                       directory >=1.2 && < 2,
+                       ghc-prim >=0.3 && < 1, 
+                       array >=0.4 && < 0.6, 
+                       binary >=0.7 && < 1, 
+                       bytestring >=0.10 && < 1,
+                       transformers >=0.3 && < 1
 
 source-repository head
     type:     git
