@@ -2,12 +2,12 @@
 
 # can be set e.g. $>gmake EDEN=/path/to/my/eden/ghc 
 ifeq ($(strip $(EDEN)),) 
-  EDEN=./eden-exp
+  EDEN=./eden-github
 endif
 
 # can be set e.g. $>gmake EDEN=/path/to/my/eden/ghc 
 ifeq ($(strip $(HADDOCK)),) 
-  HADDOCK=./eden-exp-haddock
+  HADDOCK=./eden-github-haddock
 endif
 
 # can be set e.g. $>gmake WAYFLAGS="-parcp -eventlog -debug"
@@ -54,7 +54,7 @@ help	:
 clean	:
 	@rm -f *.o *.hi
 	@for PROG in ${PROGRAMS}; do rm -f $$PROG $$USER\=$$PROG; done
-	@rm -f ${LIB}.hi ${LIB}.o
+	@rm -f ${LIB}.hi ${LIB}.o ${CPLIB}.hi ${CPLIB}.o
 	@rm -rf doc/
 	@rm -f Data/*o Data/*hi
 	@rm -f *_test2
