@@ -1,13 +1,9 @@
-RTS-Serialisation
-=================
+Haskell Serialisation Demo
+==========================
 
 This repository contains Haskell code to demonstrate a serialisation API
-provided by the Parallel Haskell runtime system for Eden 
-(see http://github.com/jberthold/ghc).
+provided by [the packman library](http://github.com/jberthold/packman).
 
-Most files in the repository are here for testing purposes, the actual
-library code is GHC/Packing.hs and Control.Monad.Checkpoint.hs.
+Please read the comments in the code and the usage text for the programs.
 
-This is experimental code, comments and contributions are most welcome.
-
-Jost Berthold (jb.diku@gmail.com)
+Comments and contributions are most welcome.
