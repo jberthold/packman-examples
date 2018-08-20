@@ -26,7 +26,7 @@ main = do
                      else putStrLn $ show $ take (read (head args)) output
 
         putStrLn "now packing the list (serialize)"
-        packet1 <- serialize output
+        packet1 <- trySerialize output
         putStrLn (show packet1)
 
         putStrLn "now unpacking (deserialize):"
