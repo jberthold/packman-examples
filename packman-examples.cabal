@@ -1,0 +1,48 @@
+name:                packman-examples
+version:             0.0.0.0
+
+synopsis:            Example programs to demo the packman library
+description: The package provides example programs that demonstrate features of the packman library.
+
+license:             BSD3
+license-file:        LICENSE
+author:              Jost Berthold
+maintainer:          jberthold@acm.org
+copyright:      (c) 2010-18 Jost Berthold
+
+build-type:          Simple
+cabal-version:       >=2
+
+source-repository head
+    type:     git
+    location: git://github.com/jberthold/packman-examples
+
+executable           checkpoint-example
+  main-is:           CheckpointExample.hs
+  hs-source-dirs:    app
+  other-modules:     Control.Monad.Checkpoint
+  default-language:  Haskell2010
+  build-depends:     base >=4.7 && < 5,
+                     binary >= 0.7,
+                     directory >=1.2 && < 2,
+                     packman >= 0.3
+
+executable           memo-fib
+  main-is:           Memoize-memocombinators.hs
+  hs-source-dirs:    app
+  default-language:  Haskell2010
+  build-depends:     base >=4.7 && < 5,
+                     directory >=1.2 && < 2,
+                     data-memocombinators >= 0,
+                     packman >= 0.3
+
+
+executable           memo-ackermann
+  main-is:           MemoAckermann.hs
+  hs-source-dirs:    app
+  default-language:  Haskell2010
+  build-depends:     base >=4.7 && < 5,
+                     directory >=1.2 && < 2,
+                     data-memocombinators >= 0,
+                     packman >= 0.3
+
