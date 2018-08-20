@@ -36,7 +36,6 @@ executable           memo-fib
                      data-memocombinators >= 0,
                      packman >= 0.3
 
-
 executable           memo-ackermann
   main-is:           MemoAckermann.hs
   hs-source-dirs:    app
@@ -46,3 +45,12 @@ executable           memo-ackermann
                      data-memocombinators >= 0,
                      packman >= 0.3
 
+executable           lazyIO
+  main-is:           lazyIO.hs
+  hs-source-dirs:    app
+  default-language:  Haskell2010
+  build-depends:     base >=4.7 && < 5,
+                     deepseq >= 1,
+                     directory >=1.2 && < 2,
+                     filepath >= 1,
+                     packman >= 0.3
