@@ -1,3 +1,5 @@
+module Main where
+
 import Data.MemoCombinators
 import GHC.Packing
 import System.IO.Unsafe
@@ -5,6 +7,9 @@ import System.Directory
 import System.Environment
 import System.CPUTime
 import Text.Printf
+
+import Data.Binary
+import Data.Typeable
 
 -- "Ackermann"
 ack :: Integer -> Integer -> Integer
@@ -25,6 +30,7 @@ ack_memo = unsafePerformIO $
                                   ac0 n m = ac (n-1) (ac n (m-1))
                               in return ac
 ackFile = "ack_memo.serialised"
+bigBuffer = 64000000
 
 main = do args <- getArgs
           putStrLn $ "Calling a memoised Ackermann function "
@@ -39,11 +45,14 @@ main = do args <- getArgs
           mapM_ timeEval results
 
           -- save function into a file
-          ack_memo `seq` encodeToFile ackFile ack_memo
+          ack_memo `seq` encodeToFileWith bigBuffer ackFile ack_memo
           -- we need to force the function here - the program
           -- would otherwise <<loop>> when saving it unevaluated
 
           putStrLn "Done"
+
+encodeToFileWith :: Typeable a => Int -> FilePath -> a -> IO ()
+encodeToFileWith sz path x = trySerializeWith x sz >>= encodeFile path
 
 timeEval :: (Show a) => a -> IO ()
 timeEval dat = do start <- getCPUTime
